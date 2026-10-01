@@ -1,0 +1,37 @@
+[project]
+name = "anyfamily-server"
+version = "0.1.0"
+description = "Any-Family 本地 Agent 中枢：感知→记忆→规划→执行器→反馈闭环的宠物陪伴能动 Agent"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+]
+
+[project.optional-dependencies]
+# 真实感知/硬件接入时再启用（MVP 骨架不强依赖，保证能先跑通）
+perception = [
+    "ultralytics>=8.3",   # YOLO 目标检测
+    "opencv-python>=4.10", # 运动门控/抽帧
+]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",        # TestClient
+]
+
+[project.scripts]
+anyfamily = "anyfamily.app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anyfamily"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
