@@ -1,0 +1,9 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# 仓库根 .gitignore 忽略了 *.png，但 site 下的图片素材需要提交，这里取消忽略
+!*.png
+!src/assets/*.png
+!images/*.png

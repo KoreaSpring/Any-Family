@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-heading: 'Inter', 'Noto Sans SC', sans-serif;
+  --font-body: 'Noto Sans SC', 'Inter', sans-serif;
+  --font-label: 'Inter', 'Noto Sans SC', sans-serif;
+
+  /* 背景：暖米白，带极浅暖色调（复刻并微调 readdy 的中性色，使其更贴近暖奶橘风） */
+  --background-50: 0.995 0.004 70;
+  --background-100: 0.978 0.006 70;
+  --background-200: 0.945 0.008 70;
+  --background-300: 0.9 0.01 70;
+  --background-400: 0.8 0.012 70;
+  --background-500: 0.7 0.012 70;
+  --background-600: 0.6 0.012 70;
+  --background-700: 0.5 0.012 70;
+  --background-800: 0.4 0.012 70;
+  --background-900: 0.3 0.01 70;
+  --background-950: 0.2 0.008 70;
+
+  /* 品牌主色：暖奶橘 / 焦糖 */
+  --primary-50: 0.97 0.02 60;
+  --primary-100: 0.94 0.04 58;
+  --primary-200: 0.89 0.07 56;
+  --primary-300: 0.84 0.1 54;
+  --primary-400: 0.79 0.13 52;
+  --primary-500: 0.72 0.15 50;
+  --primary-600: 0.64 0.15 48;
+  --primary-700: 0.54 0.13 46;
+  --primary-800: 0.45 0.11 44;
+  --primary-900: 0.38 0.09 42;
+  --primary-950: 0.28 0.06 40;
+
+  /* 科技辅色：青蓝（AI / Agent 元素） */
+  --accent-50: 0.97 0.03 190;
+  --accent-100: 0.94 0.06 190;
+  --accent-200: 0.9 0.09 189;
+  --accent-300: 0.86 0.11 188;
+  --accent-400: 0.82 0.13 187;
+  --accent-500: 0.78 0.14 186;
+  --accent-600: 0.68 0.13 186;
+  --accent-700: 0.58 0.11 186;
+  --accent-800: 0.48 0.09 186;
+  --accent-900: 0.4 0.07 186;
+  --accent-950: 0.3 0.05 186;
+
+  /* 次级色：暖灰（用于「建议观察」等柔和标签） */
+  --secondary-50: 0.975 0.006 70;
+  --secondary-100: 0.945 0.01 70;
+  --secondary-200: 0.895 0.012 70;
+  --secondary-300: 0.825 0.014 70;
+  --secondary-400: 0.725 0.016 70;
+  --secondary-500: 0.625 0.016 70;
+  --secondary-600: 0.525 0.016 70;
+  --secondary-700: 0.425 0.016 70;
+  --secondary-800: 0.325 0.014 70;
+  --secondary-900: 0.24 0.012 70;
+  --secondary-950: 0.16 0.01 70;
+
+  /* 文字：深灰蓝 */
+  --foreground-50: 0.97 0.004 260;
+  --foreground-100: 0.93 0.006 260;
+  --foreground-200: 0.86 0.008 260;
+  --foreground-300: 0.76 0.01 260;
+  --foreground-400: 0.64 0.012 260;
+  --foreground-500: 0.54 0.014 260;
+  --foreground-600: 0.46 0.014 260;
+  --foreground-700: 0.38 0.014 260;
+  --foreground-800: 0.3 0.014 260;
+  --foreground-900: 0.22 0.012 260;
+  --foreground-950: 0.16 0.012 265;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: oklch(var(--background-50));
+  color: oklch(var(--foreground-950));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 标题使用更紧的字距与更重的字重，贴近 readdy 原站的厚重质感 */
+h1,
+h2 {
+  letter-spacing: -0.02em;
+}
+
+/* 滚动显现动画 */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s, transform 0.7s;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
