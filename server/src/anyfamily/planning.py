@@ -18,6 +18,7 @@ from .bus import EventBus
 from .config import settings
 from .devices import ActuatorRegistry, Capability
 from .events import Event, EventType, action_request
+from .llm import LLMProvider, NullProvider
 from .memory import MemoryStore
 from .models import EmotionVA, Interpretation, PetProfile
 
@@ -29,9 +30,41 @@ logger = logging.getLogger("anyfamily.planning")
 class Interpreter:
     """把感知事件融合成对宠物状态/需求的解读。
 
-    MVP 为规则版：结合活动、叫声 VA、当前时间与宠物偏好/作息给出带证据的解读。
-    真实版可换成多模态 + LLM，但输出结构(Interpretation)保持不变。
+    规则版始终可用；若注入了可用的 LLM，叫声事件会优先用 LLM 生成更自然的解读，
+    失败则回退规则版。输出结构(Interpretation)保持不变。
     """
+
+    def __init__(self, llm: LLMProvider | None = None) -> None:
+        self.llm = llm or NullProvider()
+
+    async def interpret_async(self, event: Event, profile: PetProfile) -> Interpretation | None:
+        base = self.interpret(event, profile)
+        if base is None or not self.llm.available:
+            return base
+        # 用 LLM 润色/增强解读（结合品种与偏好），失败回退规则结果
+        try:
+            label = await self._llm_label(event, profile, base)
+            if label:
+                base.label = label
+                base.modalities = [*base.modalities, "llm"]
+        except Exception as e:  # noqa: BLE001
+            logger.warning("LLM 解读失败，回退规则版: %s", e)
+        return base
+
+    async def _llm_label(self, event: Event, profile: PetProfile, base: Interpretation) -> str:
+        sys = (
+            "你是宠物行为解读助手。只做状态/情绪/需求的解读，不做逐词翻译，"
+            "一句中文，口语化，不超过30字，不要加引号。"
+        )
+        user = (
+            f"宠物: {profile.name}（{profile.breed or profile.species}）。"
+            f"品种先验: {profile.breed_prior}。偏好: {profile.preferences}。"
+            f"当前信号: 事件={event.type.value}, 载荷={event.payload}。"
+            f"规则初判: {base.label}（证据 {base.evidence}）。请给出更贴切的一句解读。"
+        )
+        return await self.llm.chat(
+            [{"role": "system", "content": sys}, {"role": "user", "content": user}]
+        )
 
     def interpret(self, event: Event, profile: PetProfile) -> Interpretation | None:
         if event.type == EventType.PET_VOCAL:
@@ -130,18 +163,20 @@ class DecisionEngine:
         memory: MemoryStore,
         actuators: ActuatorRegistry,
         profile: PetProfile,
+        llm: LLMProvider | None = None,
     ) -> None:
         self.bus = bus
         self.memory = memory
         self.actuators = actuators
         self.profile = profile
-        self.interpreter = Interpreter()
+        self.llm = llm or NullProvider()
+        self.interpreter = Interpreter(self.llm)
         self.planner = Planner()
         bus.subscribe(EventType.PET_VOCAL, self._on_perception)
         bus.subscribe(EventType.PET_ACTIVITY, self._on_perception)
 
     async def _on_perception(self, event: Event) -> None:
-        interp = self.interpreter.interpret(event, self.profile)
+        interp = await self.interpreter.interpret_async(event, self.profile)
         if interp is None:
             return
         self.memory.add_interpretation(interp)
@@ -165,3 +200,36 @@ class DecisionEngine:
         await self.bus.publish(
             action_request(self.profile.id, capability, args, source="parent")
         )
+
+    async def answer(self, question: str) -> dict[str, Any]:
+        """'了解宠物'的对话式下钻：问它今天怎么样。
+
+        用今日概览 + 近期解读做上下文；有 LLM 用 LLM 回答，否则回退模板。
+        """
+        overview = self.memory.today_overview(self.profile.id)
+        interps = self.memory.recent_interpretations(self.profile.id, limit=6)
+        evidence = [f"{i.label}(置信度{i.confidence:.0%})" for i in interps]
+
+        if not self.llm.available:
+            answer = f"{overview['summary']}"
+            if evidence:
+                answer += " 近期解读：" + "；".join(evidence[:3]) + "。"
+            return {"answer": answer, "evidence": evidence, "llm": False}
+
+        sys = (
+            "你是家庭宠物陪伴助手，把宠物的状态讲给主人听。"
+            "基于给定的事实回答，口语化、温暖、简洁（2-3句），不编造，涉及健康只提示不下诊断。"
+        )
+        user = (
+            f"宠物: {self.profile.name}（{self.profile.breed or self.profile.species}）。"
+            f"今日概览: {overview['summary']} 活动分布 {overview['activities']}。"
+            f"近期解读: {evidence}。主人问: {question}"
+        )
+        try:
+            answer = await self.llm.chat(
+                [{"role": "system", "content": sys}, {"role": "user", "content": user}]
+            )
+            return {"answer": answer, "evidence": evidence, "llm": True}
+        except Exception as e:  # noqa: BLE001
+            logger.warning("LLM 回答失败，回退模板: %s", e)
+            return {"answer": overview["summary"], "evidence": evidence, "llm": False}

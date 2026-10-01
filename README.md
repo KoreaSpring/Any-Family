@@ -8,6 +8,50 @@ Any-Family 是一个**本地优先（local-first）**的宠物陪伴 AI 系统�
 
 ---
 
+## 快速开始（成品可运行）
+
+当前已有一个**端到端可运行**的实现：本地 Agent 服务端（能动闭环 + Web 控制台）+ 跨平台移动端。
+
+### 1. 启动服务端（最快，浏览器即看）
+
+```bash
+cd server
+uv sync
+uv run anyfamily
+# 自动打开 http://127.0.0.1:8080 —— Web 控制台：今日概览 / 时间线 / 听懂我解读 /
+# 看到我·逗玩·投食 / 健康提示 / Agent 实时闭环事件流
+```
+
+无需 GPU、无需大模型即可跑通：感知用 Stub、硬件用 Mock、决策用规则版，闭环完整。
+
+### 2.（可选）接入真实大模型
+
+```bash
+# 方式 A：OpenAI 兼容（含国内兼容服务）
+$env:ANYFAMILY_LLM_BACKEND="openai"
+$env:ANYFAMILY_LLM_API_KEY="你的key"
+$env:ANYFAMILY_LLM_MODEL="gpt-4o-mini"   # 或兼容模型
+# 方式 B：本地 Ollama（数据不出门）
+$env:ANYFAMILY_LLM_BACKEND="ollama"; $env:ANYFAMILY_LLM_MODEL="qwen2.5"
+```
+
+不配置时自动回退规则版，服务照常可用。解读与"问问它"会在有 LLM 时更自然。
+
+### 3. 启动移动端（父母端 App）
+
+```bash
+cd mobile
+npm install
+# 把 app.json 里 extra.apiBaseUrl 改成电脑在局域网的 IP（真机用），如 http://192.168.1.10:8080
+npm start           # 扫码（Expo Go）或开模拟器
+```
+
+移动端含：引导录入 → 首页（3D 形象占位 + 今日概览 + 三个入口：了解宠物 / 听懂我 / 看到我）+ 健康提示。
+
+> 详细说明见 [server/README.md](server/README.md) 与 [mobile/README.md](mobile/README.md)。
+
+---
+
 ## 这个项目想解决什么
 
 养宠物的人常有两种焦虑：**不在家时它过得好不好**，以及**它不会说话、我读不懂它**。

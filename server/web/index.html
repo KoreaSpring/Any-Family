@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Any-Family · 宠物陪伴</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #1a1d24; --card2: #22262f; --line: #2c313c;
+    --txt: #e8eaed; --mut: #9aa0ac; --acc: #7cc4ff; --warn: #ffb454; --urgent: #ff6b6b;
+    --ok: #6bd68a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt);
+    font: 15px/1.5 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  header { padding: 16px 20px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 18px; margin: 0; }
+  header .pet { color: var(--mut); font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
+    display: inline-block; margin-right: 6px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px; display: grid;
+    grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px; }
+  .card h2 { font-size: 14px; margin: 0 0 12px; color: var(--mut);
+    text-transform: uppercase; letter-spacing: .5px; }
+  .span2 { grid-column: 1 / -1; }
+  /* 3D 形象占位 */
+  .avatar { display: flex; align-items: center; gap: 20px; }
+  .pet3d { width: 160px; height: 160px; border-radius: 16px; flex: none;
+    background: radial-gradient(circle at 40% 35%, #3a4150, #1a1d24);
+    display: flex; align-items: center; justify-content: center; font-size: 64px;
+    animation: spin 8s linear infinite; cursor: grab; }
+  @keyframes spin { from { transform: rotateY(0); } to { transform: rotateY(360deg); } }
+  .summary { font-size: 16px; }
+  .metrics { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+  .metric { background: var(--card2); border-radius: 10px; padding: 10px 14px; }
+  .metric b { font-size: 20px; } .metric span { color: var(--mut); font-size: 12px; }
+  /* 入口 */
+  .entries { display: flex; gap: 10px; margin-top: 16px; }
+  .entry { flex: 1; background: var(--card2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; text-align: center; cursor: pointer;
+    transition: .15s; }
+  .entry:hover { border-color: var(--acc); transform: translateY(-2px); }
+  .entry .ico { font-size: 24px; } .entry .t { margin-top: 4px; font-size: 13px; }
+  /* 列表 */
+  .list { max-height: 300px; overflow-y: auto; }
+  .item { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .item:last-child { border: 0; }
+  .item .tag { display: inline-block; padding: 1px 7px; border-radius: 6px;
+    background: var(--card2); color: var(--acc); font-size: 11px; margin-right: 6px; }
+  .item .ev { color: var(--mut); font-size: 12px; }
+  .conf { float: right; color: var(--mut); font-size: 12px; }
+  /* 控件 */
+  .row { display: flex; gap: 8px; margin-top: 8px; }
+  input, select, button { font: inherit; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card2); color: var(--txt); padding: 8px 10px; }
+  input { flex: 1; }
+  button { cursor: pointer; background: var(--acc); color: #06243a; border: 0; font-weight: 600; }
+  button.ghost { background: var(--card2); color: var(--txt); border: 1px solid var(--line); }
+  button:active { transform: scale(.97); }
+  .hint { color: var(--mut); font-size: 12px; margin-top: 8px; }
+  .health .alert { padding: 8px 10px; border-radius: 8px; margin-bottom: 8px;
+    border-left: 3px solid var(--warn); background: var(--card2); font-size: 13px; }
+  .health .alert.urgent { border-left-color: var(--urgent); }
+  .health .ok { color: var(--ok); font-size: 13px; }
+  /* 实时流 */
+  .stream { font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+    max-height: 240px; overflow-y: auto; }
+  .ev-line { padding: 3px 0; border-bottom: 1px solid #22262f; }
+  .ev-line .et { color: var(--acc); }
+  .ev-line .act { color: var(--ok); }
+  .disclaimer { color: var(--mut); font-size: 11px; margin-top: 10px;
+    padding-top: 10px; border-top: 1px solid var(--line); }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--acc); color: #06243a; padding: 10px 18px; border-radius: 10px;
+    font-weight: 600; opacity: 0; transition: .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🐾 Any-Family</h1>
+  <span class="pet"><span class="dot"></span><span id="petName">加载中…</span></span>
+  <span class="pet" id="connState" style="margin-left:auto">● 实时连接中…</span>
+</header>
+
+<main>
+  <!-- 首页：3D 形象 + 概览 + 入口 -->
+  <section class="card span2">
+    <div class="avatar">
+      <div class="pet3d" id="pet3d" title="360° 可旋转（示意）">🐕</div>
+      <div style="flex:1">
+        <h2>今日概览</h2>
+        <div class="summary" id="summary">—</div>
+        <div class="metrics" id="metrics"></div>
+        <div class="entries">
+          <div class="entry" onclick="scrollToCard('cardUnderstand')"><div class="ico">🔍</div><div class="t">了解宠物</div></div>
+          <div class="entry" onclick="scrollToCard('cardHear')"><div class="ico">👂</div><div class="t">听懂我</div></div>
+          <div class="entry" onclick="scrollToCard('cardSee')"><div class="ico">💬</div><div class="t">看到我</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 了解宠物：时间线 -->
+  <section class="card" id="cardUnderstand">
+    <h2>🔍 了解宠物 · 今日时间线</h2>
+    <div class="list" id="timeline"></div>
+  </section>
+
+  <!-- 听懂我：解读 -->
+  <section class="card" id="cardHear">
+    <h2>👂 听懂我 · 情绪与需求解读</h2>
+    <div class="list" id="interps"></div>
+    <div class="disclaimer">我们做的是状态/需求的解读，不是逐词翻译。每条都带依据与置信度。</div>
+  </section>
+
+  <!-- 看到我 + 逗玩 + 投食 -->
+  <section class="card" id="cardSee">
+    <h2>💬 看到我 · 远程互动</h2>
+    <div class="row">
+      <input id="speakText" placeholder="用它熟悉的话安抚，如：Lucky 乖，马上回家" />
+      <button onclick="doSpeak()">用主人声音说</button>
+    </div>
+    <div class="row">
+      <select id="playMode"><option value="laser">激光逗玩</option><option value="ball">抛球</option><option value="move">移动陪伴</option></select>
+      <button class="ghost" onclick="doPlay()">逗它玩</button>
+      <button class="ghost" onclick="doFeed()">投点零食</button>
+    </div>
+    <div class="hint">科学依据：宠物对熟悉的指令词 + 熟悉的声音响应最好，所以用主人声音而非合成陌生音。</div>
+  </section>
+
+  <!-- 健康 -->
+  <section class="card health" id="cardHealth">
+    <h2>🩺 健康提示（提示，非诊断）</h2>
+    <div id="healthList"><div class="ok">暂无异常提示。</div></div>
+    <div class="disclaimer">本提示不构成诊断，请以兽医检查为准。</div>
+  </section>
+
+  <!-- 实时事件流 -->
+  <section class="card span2">
+    <h2>⚡ Agent 实时闭环（感知 → 解读 → 规划 → 执行）</h2>
+    <div class="stream" id="stream"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const api = (p, opt) => fetch(p, opt).then(r => r.json());
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+function scrollToCard(id) { $(id).scrollIntoView({behavior:"smooth", block:"center"}); }
+
+const ACT_LABEL = { eating:"进食", sleeping:"睡觉", playing:"玩耍", restless:"躁动", idle:"安静", moving:"走动" };
+const CAP_LABEL = { speak:"说话", camera:"抓拍", play:"逗玩", feed:"投食" };
+const TYPE_LABEL = {
+  "perception.presence":"在场", "perception.activity":"活动", "perception.vocal":"发声",
+  "decision.interpretation":"解读", "action.request":"动作请求", "action.result":"动作结果",
+};
+
+async function loadPet() {
+  const p = await api("/pet");
+  $("petName").textContent = `${p.name} · ${p.breed || p.species}`;
+  $("pet3d").textContent = p.species === "cat" ? "🐈" : "🐕";
+}
+
+async function loadOverview() {
+  const o = await api("/overview");
+  $("summary").textContent = o.summary;
+  const m = $("metrics"); m.innerHTML = "";
+  const acts = Object.entries(o.activities || {});
+  const total = acts.reduce((s,[,v]) => s+v, 0);
+  const top = acts.sort((a,b)=>b[1]-a[1])[0];
+  const cards = [
+    ["主要状态", top ? ACT_LABEL[top[0]]||top[0] : "—"],
+    ["发声", (o.vocal_count||0) + " 次"],
+    ["观察片段", total + " 段"],
+    ["设备动作", Object.values(o.actions||{}).reduce((s,v)=>s+v,0) + " 次"],
+  ];
+  m.innerHTML = cards.map(([s,b]) => `<div class="metric"><b>${b}</b><br><span>${s}</span></div>`).join("");
+}
+
+async function loadInterps() {
+  const items = await api("/interpretations?limit=12");
+  $("interps").innerHTML = items.slice().reverse().map(i =>
+    `<div class="item"><span class="conf">置信度 ${(i.confidence*100|0)}%</span>
+     <span class="tag">解读</span>${i.label}
+     <div class="ev">依据：${(i.evidence||[]).join("；")}</div></div>`
+  ).join("") || '<div class="item ev">还在观察中…</div>';
+}
+
+async function loadTimeline() {
+  const rows = await api("/timeline?limit=40");
+  $("timeline").innerHTML = rows.slice().reverse().map(r => {
+    const t = new Date(r.ts*1000).toLocaleTimeString("zh-CN");
+    const p = r.payload || {};
+    let desc = TYPE_LABEL[r.type] || r.type;
+    if (r.type === "perception.activity") desc = "活动：" + (ACT_LABEL[p.activity]||p.activity);
+    else if (r.type === "perception.vocal") desc = "发声：" + p.kind;
+    else if (r.type === "action.result") desc = `执行 ${CAP_LABEL[p.capability]||p.capability} ${p.ok?"✓":"✗"}`;
+    else if (r.type === "perception.presence") desc = p.present ? "进入画面" : "离开画面";
+    return `<div class="item"><span class="ev">${t}</span> &nbsp; ${desc}</div>`;
+  }).join("") || '<div class="item ev">暂无事件</div>';
+}
+
+async function loadHealth() {
+  const items = await api("/health-alerts");
+  const el = $("healthList");
+  if (!items.length) { el.innerHTML = '<div class="ok">暂无异常提示。</div>'; return; }
+  el.innerHTML = items.map(h =>
+    `<div class="alert ${h.severity}"><b>${h.region}</b>：${h.finding}
+     <div class="ev">${(h.evidence||[]).join("；")} · 建议：${h.advice}</div></div>`
+  ).join("");
+}
+
+// 手动指令
+async function post(p, body) {
+  await fetch(p, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body)});
+}
+async function doSpeak() {
+  const text = $("speakText").value.trim(); if (!text) return toast("先输入要说的话");
+  await post("/speak", {text, voice:"owner"}); toast("已用主人声音播放"); $("speakText").value="";
+}
+async function doPlay() { await post("/play", {mode:$("playMode").value, duration_s:30}); toast("开始逗玩"); }
+async function doFeed() { await post("/feed", {portion:"small"}); toast("已投食"); }
+
+// 实时事件流（SSE）
+function connectStream() {
+  const es = new EventSource("/events");
+  const box = $("stream");
+  es.addEventListener("hello", () => { $("connState").textContent = "● 实时已连接"; });
+  es.onmessage = (e) => {
+    let ev; try { ev = JSON.parse(e.data); } catch { return; }
+    const t = new Date(ev.ts*1000).toLocaleTimeString("zh-CN");
+    const p = ev.payload || {};
+    let txt = TYPE_LABEL[ev.type] || ev.type, cls = "et";
+    if (ev.type === "decision.interpretation") txt = "解读 → " + (p.label||"");
+    else if (ev.type === "action.request") { txt = "规划 → 调用 " + (CAP_LABEL[p.capability]||p.capability); }
+    else if (ev.type === "action.result") { txt = `执行 ${CAP_LABEL[p.capability]||p.capability} ${p.ok?"✓":"✗"}`; cls="act"; }
+    else if (ev.type === "perception.activity") txt = "感知 · 活动：" + (ACT_LABEL[p.activity]||p.activity);
+    else if (ev.type === "perception.vocal") txt = "感知 · 发声：" + p.kind;
+    else if (ev.type === "perception.presence") txt = "感知 · " + (p.present?"在画面":"离开");
+    const line = document.createElement("div");
+    line.className = "ev-line";
+    line.innerHTML = `<span class="ev">${t}</span> <span class="${cls}">${txt}</span>`;
+    box.prepend(line);
+    while (box.children.length > 60) box.lastChild.remove();
+    // 事件可能改变概览/解读/时间线，轻量刷新
+    if (ev.type.startsWith("decision")) loadInterps();
+    if (ev.type.startsWith("action.result")) loadOverview();
+  };
+  es.onerror = () => { $("connState").textContent = "● 重连中…"; };
+}
+
+async function init() {
+  await loadPet();
+  await Promise.all([loadOverview(), loadInterps(), loadTimeline(), loadHealth()]);
+  connectStream();
+  setInterval(() => { loadOverview(); loadTimeline(); }, 8000);
+}
+init();
+</script>
+</body>
+</html>

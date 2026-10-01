@@ -5,13 +5,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .agent import Agent
 from .models import PetProfile
+from .stream import EventBroadcaster
 
 
 class SpeakRequest(BaseModel):
@@ -28,8 +32,27 @@ class FeedRequest(BaseModel):
     portion: str = "small"
 
 
+class AskRequest(BaseModel):
+    question: str = "它今天怎么样？"
+
+
+class ProfilePatch(BaseModel):
+    """引导录入/完善资料：全部可选，只更新提供的字段。"""
+
+    name: str | None = None
+    breed: str | None = None
+    age: float | None = None
+    sex: str | None = None
+    neutered: bool | None = None
+    weight_kg: float | None = None
+    habits: dict[str, Any] | None = None
+    preferences: dict[str, Any] | None = None
+    trained_commands: list[str] | None = None
+
+
 def create_app(agent: Agent) -> FastAPI:
     app = FastAPI(title="Any-Family Server", version="0.1.0")
+    broadcaster = EventBroadcaster(agent.bus)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -38,6 +61,27 @@ def create_app(agent: Agent) -> FastAPI:
     @app.get("/pet")
     async def get_pet() -> PetProfile:
         return agent.profile
+
+    @app.post("/pet")
+    async def update_pet(patch: ProfilePatch) -> PetProfile:
+        return agent.update_profile(patch.model_dump(exclude_none=True))
+
+    @app.get("/llm-status")
+    async def llm_status() -> dict[str, Any]:
+        return {"backend": agent.llm.name, "available": agent.llm.available}
+
+    @app.post("/ask")
+    async def ask(req: AskRequest) -> dict[str, Any]:
+        return await agent.decision.answer(req.question)
+
+    @app.get("/events")
+    async def events() -> StreamingResponse:
+        q = broadcaster.register()
+        return StreamingResponse(
+            broadcaster.sse(q),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     @app.get("/devices")
     async def devices() -> list[dict[str, Any]]:
@@ -81,5 +125,10 @@ def create_app(agent: Agent) -> FastAPI:
     async def perceive_once() -> dict[str, Any]:
         events = await agent.perceive_once()
         return {"emitted": [e.model_dump() for e in events]}
+
+    # ---- Web 控制台静态页（挂在最后，不遮挡上面的 API 路由）----
+    web_dir = Path(__file__).resolve().parent.parent.parent / "web"
+    if web_dir.is_dir():
+        app.mount("/", StaticFiles(directory=str(web_dir), html=True), name="web")
 
     return app

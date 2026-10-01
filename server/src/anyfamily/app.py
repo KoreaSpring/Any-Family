@@ -63,7 +63,13 @@ def main() -> None:
             with contextlib.suppress(asyncio.CancelledError):
                 await task
 
-    logger.info("启动 Any-Family 服务 http://%s:%d", settings.host, settings.port)
+    url = f"http://{settings.host}:{settings.port}"
+    logger.info("启动 Any-Family 服务 %s （Web 控制台直接打开此地址）", url)
+    if settings.open_browser:
+        import threading
+        import webbrowser
+
+        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
     uvicorn.run(app, host=settings.host, port=settings.port, log_level="info")
 
 

@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Any-Family",
+    "slug": "any-family",
+    "scheme": "anyfamily",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0f1115"
+    },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.anyfamily.app" },
+    "android": {
+      "package": "com.anyfamily.app",
+      "adaptiveIcon": { "backgroundColor": "#0f1115" }
+    },
+    "web": { "bundler": "metro", "output": "single" },
+    "plugins": ["expo-router"],
+    "extra": {
+      "apiBaseUrl": "http://127.0.0.1:8080"
+    }
+  }
+}
