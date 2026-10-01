@@ -49,7 +49,19 @@ Any-Family 想做的事：
 - **记忆**：向量检索 + 结构化画像（本地存储，隐私可控）
 - **父母移动端**：React Native（iOS / Android），LiveKit RN SDK 实时音视频
 
-> 完整技术选型与方案对比见 [docs/RESEARCH.md](docs/RESEARCH.md)，架构设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+> 完整技术选型与方案对比见 [docs/RESEARCH.md](docs/RESEARCH.md)，架构设计见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，
+> 父母端产品设计见 [docs/PRODUCT.md](docs/PRODUCT.md)。
+
+## 父母端核心体验
+
+- **引导录入**：拍照/录视频 → 确认品种 → 填习惯/喜好/作息，一步建档。
+- **3D 宠物形态图**：agent 学习后生成这只宠物的 3D 形象，360° 可旋转；叠加"穴位图"式健康标注，高亮可能异常的部位并提示去检查（提示而非诊断）。
+- **🔍 了解宠物**：汇总今日概览、时间线、习惯画像，以及"品种普遍倾向 vs 你家这只"的对比。
+- **👂 听懂我**：把宠物叫声实时解析成"情绪 + 可能需求 + 置信度 + 依据"的文字解读（结合画面与历史，不是逐词翻译）。
+- **💬 看到我**：输入文字，用它熟悉的指令词 + 主人熟悉的声音远程安抚/指令（基于"狗对熟悉声音响应最好"的科学证据，不是生成动物语）。
+
+> 诚实说明：我们做的是宠物**状态/情绪/需求的解读**与**健康提示**，不做"宠物翻译机"，也不替代兽医诊断。
+> 这几条红线与科学依据见 [docs/PRODUCT.md](docs/PRODUCT.md) 第 0 节。
 
 ## 仓库结构
 
@@ -58,6 +70,7 @@ any-family/
 ├── docs/                 # 调研、架构、路线图文档
 │   ├── RESEARCH.md       # 实现方案调研（技术选型 + 业界方案对比）
 │   ├── ARCHITECTURE.md   # 系统架构设计
+│   ├── PRODUCT.md        # 父母端产品设计（引导/3D形态图/三个入口）
 │   └── roadmap/          # 分阶段路线图
 ├── server/               # 本地 Agent 中枢 + 感知/记忆/决策/表达（Python）
 ├── mobile/               # 父母端跨平台 App（React Native）
