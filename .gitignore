@@ -1,0 +1,64 @@
+# ===== 通用 =====
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+!.env.example
+
+# ===== Python (server) =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+
+# ===== Node / React Native (mobile) =====
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.expo/
+.expo-shared/
+*.tsbuildinfo
+
+# ===== 移动端原生构建产物 =====
+mobile/ios/Pods/
+mobile/ios/build/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+*.keystore
+!debug.keystore
+
+# ===== 模型权重 / 大文件（不入库，由脚本下载）=====
+*.pt
+*.onnx
+*.gguf
+*.safetensors
+models/
+weights/
+
+# ===== 媒体数据（隐私，不入库）=====
+data/
+media/
+recordings/
+chat_history/
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.jpg
+*.jpeg
+*.png
+!docs/**/*.png
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
